@@ -88,21 +88,26 @@ m1.nfag <- lm(BBdelay~as.factor(treatment)*species*as.factor(batch), data=subset
 ## Expe 2 ##
 ############
 d2 <- read.delim("data_expe2.csv", header=TRUE, sep=";")
+# d2 <- read.delim("data_expe2_v2.csv", header=TRUE, sep=";") # not using yet ... would need to adjust code a bit, so prefer not to (but may want to merge in for temperature info)
 
 # now get a unique cutting for each tree
-d2$cutting.unq <- paste(d2$Flask_code, d2$cutting)
-
+d2$cutting.unq <- paste(d2$Flask_code, d2$cutting) 
 # check
 d2summ <-
       ddply(d2, c("Species", "Tree"), summarise,
       length(unique(cutting.unq)))
+
 
 ## re-sort the treatments
 # here's how the model will resort the treatments
 sort(unique(d2$Treatment))
 d2$treatment.adj <- d2$Treatment
 d2$treatment.adj[d2$Treatment=="20/20"] <- "1_20/20"
-d2$treatment.adj[d2$Treatment=="oct-26"] <- "10/26" # clean-up
+d2$treatment.adj[d2$Treatment=="14/26"] <- "2_14/26"
+d2$treatment.adj[d2$Treatment=="14/26d"] <- "3_14/26d"
+d2$treatment.adj[d2$Treatment=="26/14"] <- "4_26/14"
+d2$treatment.adj[d2$Treatment=="14/22"] <- "5_14/22"
+d2$treatment.adj[d2$Treatment=="oct-26"] <- "6_10/26" # clean-up
 sort(unique(d2$treatment.adj))
 
 ## 
@@ -215,7 +220,9 @@ par(xpd=TRUE) # so I can plot legend outside
 legend(21, 6, c("Acer", "Betula", "Fagus", "Quercus"), pch=19, col=alpha(my.pal[1:4], alphahere),
    cex=0.75, bty="n")
 
+
 if(runstanmodels.e2.bysp){
+columnstoextract <- c("mean", "2.5%", "25%", "50%", "75%", "97.5%", "Rhat", "mcse")
 # random intercepts (just for Acer for now)
 m2.stan.ace.ri <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (1|Tree), data=ace)
@@ -234,16 +241,27 @@ m2.stan.que.ri.wcut <- stan_lmer(BBdelay~as.factor(treatment.adj) +
 m2.stan.ace.rs <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (as.factor(treatment.adj)|Tree), data=ace, cores=4)
 save(m2.stan.ace.rs, file="output/m2.stan.ace.rs.Rdata")
+m2.stan.ace.rs.df <- as.data.frame(summary(m2.stan.ace.rs)[,columnstoextract])
+write.table(m2.stan.ace.rs.df, file="output/m2.stan.ace.rs.df.csv", sep=";", row.names=TRUE)
+
 m2.stan.bet.rs <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (as.factor(treatment.adj)|Tree), data=bet, cores=4)
 save(m2.stan.bet.rs, file="output/m2.stan.bet.rs.Rdata")
-    
+m2.stan.bet.rs.df <- as.data.frame(summary(m2.stan.bet.rs)[,columnstoextract])
+write.table(m2.stan.bet.rs.df, file="output/m2.stan.bet.rs.df.csv", sep=";", row.names=TRUE)
+
 m2.stan.fag.rs <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (as.factor(treatment.adj)|Tree), data=fag, cores=4)
 save(m2.stan.fag.rs, file="output/m2.stan.fag.rs.Rdata")
+m2.stan.fag.rs.df <- as.data.frame(summary(m2.stan.fag.rs)[,columnstoextract])
+write.table(m2.stan.fag.rs.df, file="output/m2.stan.fag.rs.df.csv", sep=";", row.names=TRUE)
+
 m2.stan.que.rs <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (as.factor(treatment.adj)|Tree), data=que, cores=4)
 save(m2.stan.que.rs, file="output/m2.stan.que.rs.Rdata")
+m2.stan.que.rs.df <- as.data.frame(summary(m2.stan.que.rs)[,columnstoextract])
+write.table(m2.stan.que.rs.df, file="output/m2.stan.que.rs.df.csv", sep=";", row.names=TRUE)
+    
 }
 
 
@@ -263,7 +281,7 @@ modelhere <- summary(modelhere.full)
 # 14/26d
 # 26/14
 # 14/22
-# 10/26 
+# 10/26
 
 jitterpt <- -0.2 # push tree ID estimates below main estimate
 # loop over trees 
