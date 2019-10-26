@@ -18,7 +18,7 @@ m2.stan.ace.rs.df <- read.table("output/m2.stan.ace.rs.df.csv", sep=";")
 m2.stan.bet.rs.df <- read.delim("output/m2.stan.bet.rs.df.csv", sep=";")
 m2.stan.fag.rs.df <- read.delim("output/m2.stan.fag.rs.df.csv", sep=";")
 m2.stan.que.rs.df <- read.delim("output/m2.stan.que.rs.df.csv", sep=";")
-nameshere <- c("mean", "2.5%", "25%", "50%", "75%", "97.5%", "Rhat", "mcse")
+nameshere <- c("mean", "2.5%", "25%", "50%", "75%", "97.5%", "Rhat", "mcse", "5%", "95%")
 names(m2.stan.ace.rs.df) <- nameshere
 names(m2.stan.bet.rs.df) <- nameshere
 names(m2.stan.fag.rs.df) <- nameshere
@@ -44,7 +44,7 @@ jitterpt <- -0.2 # push tree ID estimates below main estimate
 ## f(x)s to make plotting easier 
 
 # function to plot for each model with tree ID including actual intercept value
-plot.randslopes <- function(model, spname, nameforfig, height, width, cil, ciu, xlim, legendxpos){
+plot.randslopes <- function(model, spname, nameforfig, height, width, cil, ciu, cil2, ciu2, xlim, legendxpos){
     modelhere <- model
 pdf(file.path(paste("figures/muplot", spname, nameforfig, ".pdf", sep="")),
     width = width, height = height)
@@ -69,6 +69,12 @@ pos.x <- dfhere[,"mean"]+modelhere[1:6,"mean"]+jitterpt
 points(pos.x, pos.y, cex=1, pch=19, col=alpha(my.pal2[whichtree],alphahere))
 }
 
+for(i in 1:6){
+   pos.y <- (6:1)
+   lines(c(modelhere[i,cil2], modelhere[i,ciu2]), rep(pos.y[i], 2),
+       col=alpha("black",alphahere.lighter), type="l", lwd=2)
+}
+    
 points(modelhere[1:6,"mean"], (6:1), cex=1, pch=19, col="black")
 for(i in 1:6){
    pos.y <- (6:1)
@@ -94,12 +100,16 @@ height <- 7 # height of the figure
 width <- 6 # width of the figue
 cil <- "2.5%" # credible interval lower
 ciu <- "97.5%" # credible interval upper
+cil2 <- "5%" # credible interval lower
+ciu2 <- "95%" # credible interval upper
 xlim <- c(-20, 20) # the x axis limits
 legendxpos <- 23 # where to put the legend (must be al little bigger than max of xlim) 
 } 
-plot.randslopes.zeroint <- function(model, spname, nameforfig, height, width, cil, ciu, xlim, legendxpos){
+plot.randslopes.zeroint <- function(model, spname, nameforfig, height, width, cil, ciu, cil2, ciu2, xlim, legendxpos){
     modelhere <- model
-    modelhere[1,1:6] <- modelhere[1,1:6]-modelhere[1,1]
+    modelint <- modelhere[1,1]
+    modelhere[1,1:6] <- modelhere[1,1:6]-modelint
+    modelhere[1,9:10] <- modelhere[1,9:10]-modelint
 pdf(file.path(paste("figures/muplot", spname, nameforfig, ".pdf", sep="")),
     width = width, height = height)
 par(xpd=FALSE)
@@ -122,10 +132,17 @@ pos.y <- (6:1)+jitterpt
 pos.x <- dfhere[,"mean"]+modelhere[1:6,"mean"]+jitterpt
 points(pos.x, pos.y, cex=1, pch=19, col=alpha(my.pal2[whichtree],alphahere))
 }
+
+for(i in 1:6){
+   pos.y <- (6:1)
+   lines(c(modelhere[i,cil], modelhere[i,ciu]), rep(pos.y[i], 2),
+       col=alpha("black",alphahere.lighter), type="l", lwd=2)
+}
+    
 points(modelhere[1:6,"mean"], (6:1), cex=1, pch=19, col="black")
 for(i in 1:6){
    pos.y <- (6:1)
-   lines(c(modelhere[i,cil], modelhere[i,ciu]), rep(pos.y[i], 2), col="black",
+   lines(c(modelhere[i,cil2], modelhere[i,ciu2]), rep(pos.y[i], 2), col="black",
        type="l", lwd=2)
 }
 
@@ -142,26 +159,30 @@ dev.off()
 ## Make the plots!
 
 # old versions
-plot.randslopes(m2.stan.ace.rs.df, "Acer", "exp2randslopes.50per", 7, 6, "25%", "75%", c(-10, 46), 48)
-plot.randslopes(m2.stan.bet.rs.df, "Betula", "exp2randslopes.50per", 7, 6, "25%", "75%", c(-10, 46), 48)
-plot.randslopes(m2.stan.fag.rs.df, "Fagus", "exp2randslopes.50per", 7, 6, "25%", "75%", c(-20, 56), 60)
-plot.randslopes(m2.stan.que.rs.df, "Quercus", "exp2randslopes.50per", 7, 6, "25%", "75%", c(-10, 46), 48)
+plot.randslopes(m2.stan.ace.rs.df, "Acer", "exp2randslopes.50per", 7, 6, "25%", "75%",
+    "25%", "75%", c(-10, 46), 48)
+plot.randslopes(m2.stan.bet.rs.df, "Betula", "exp2randslopes.50per", 7, 6, "25%", "75%",
+    "25%", "75%",c(-10, 46), 48)
+plot.randslopes(m2.stan.fag.rs.df, "Fagus", "exp2randslopes.50per", 7, 6, "25%", "75%",
+    "25%", "75%", c(-20, 56), 60)
+plot.randslopes(m2.stan.que.rs.df, "Quercus", "exp2randslopes.50per", 7, 6, "25%", "75%",
+    "25%", "75%", c(-10, 46), 48)
 
 # intercept centered at zero
 plot.randslopes.zeroint(m2.stan.ace.rs.df, "Acer", "exp2randslopes.noint.50per", 7, 6, 
-    "25%", "75%", c(-20, 20), 23)
+    "5%", "95%", "25%", "75%", c(-20, 20), 23)
 plot.randslopes.zeroint(m2.stan.ace.rs.df, "Acer", "exp2randslopes.noint.95per", 7, 6,
-    "2.5%", "97.5%", c(-20, 20), 23)
+    "2.5%", "97.5%", "5%", "95%", c(-20, 20), 23)
 plot.randslopes.zeroint(m2.stan.bet.rs.df, "Betula", "exp2randslopes.noint.50per", 7, 6,
-    "25%", "75%", c(-20, 20), 23)
+     "5%", "95%", "25%", "75%", c(-20, 20), 23)
 plot.randslopes.zeroint(m2.stan.bet.rs.df, "Betula", "exp2randslopes.noint.95per", 7, 6,
-    "2.5%", "97.5%", c(-20, 20), 23)
+    "2.5%", "97.5%", "5%", "95%", c(-20, 20), 23)
 plot.randslopes.zeroint(m2.stan.fag.rs.df, "Fagus", "exp2randslopes.noint.50per", 7, 6,
-    "25%", "75%", c(-30, 20), 23)
+    "5%", "95%", "25%", "75%", c(-30, 20), 23)
 plot.randslopes.zeroint(m2.stan.fag.rs.df, "Fagus", "exp2randslopes.noint.95per", 7, 6,
-    "2.5%", "97.5%", c(-30, 20), 23)
+    "2.5%", "97.5%", "5%", "95%", c(-30, 20), 23)
 plot.randslopes.zeroint(m2.stan.que.rs.df, "Quercus", "exp2randslopes.noint.50per", 7, 6,
-    "25%", "75%", c(-20, 20), 23)
+    "5%", "95%", "25%", "75%", c(-20, 20), 23)
 plot.randslopes.zeroint(m2.stan.que.rs.df, "Quercus", "exp2randslopes.noint.95per", 7, 6,
-     "2.5%", "97.5%", c(-20, 20), 23)
+     "2.5%", "97.5%", "5%", "95%", c(-20, 20), 23)
 

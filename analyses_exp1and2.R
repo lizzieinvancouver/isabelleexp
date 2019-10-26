@@ -21,10 +21,13 @@ library(rstanarm)
 library(plyr)
 library(dplyr)
 
+# Needed below...
+columnstoextract <- c("mean", "2.5%", "25%", "50%", "75%", "97.5%", "Rhat", "mcse")
+
 # Change below if you want to run the Stan models (need multicore)
 runstanmodels.e1 <- FALSE
 runstanmodels.e2 <- FALSE
-runstanmodels.e2.bysp <- TRUE
+runstanmodels.e2.bysp <- FALSE
 plotstanmodels.e2.bysp <- TRUE # need to have run the stan models and have the output 
 
 setwd("~/Documents/git/projects/treegarden/isabelle_expe")
@@ -125,17 +128,47 @@ m2.stan <- stan_lmer(BBdelay~as.factor(treatment.adj)*Species +
 m2sum <- summary(m2.stan)
 # 647 divergent transitions, maybe because of dup. treatment of species
 # so I don't report this model
-
 m2.stan.alt <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (1|Species/Tree), data=d2, cores=4)
 m2sum.alt <- summary(m2.stan.alt)
-# 4 divergent transitions
-m2.rs.stan <- stan_lmer(BBdelay~as.factor(treatment.adj) +
-    (as.factor(treatment.adj)|Species/Tree), data=d2, cores=4)
-# 16 divergent transitions
-summary(m2.rs.stan)
-}
+save(m2.stan.alt, file="output/m2.stan.alt.Rdata")
 
+m2.stan.alt2 <- stan_lmer(BBdelay~as.factor(treatment.adj) +
+    (1|Species), data=d2, cores=4)
+m2sum.alt2 <- summary(m2.stan.alt2)
+save(m2.stan.alt2, file="output/m2.stan.alt2.Rdata")
+m2.stan.alt2.df <- as.data.frame(summary(m2.stan.alt2)[,columnstoextract])
+# Deleting these so I can bind with posterior interval output
+m2.stan.alt2.df <- m2.stan.alt2.df[-(which(rownames(m2.stan.alt2.df)=="mean_PPD")),]
+m2.stan.alt2.df <- m2.stan.alt2.df[-(which(rownames(m2.stan.alt2.df)=="log-posterior")),] 
+m2.stan.alt2.df <- cbind(m2.stan.alt2.df, posterior_interval(m2.stan.alt2, prob = 0.9, type = "central"))
+write.table(m2.stan.alt2.df, file="output/m2.stan.alt2.df.csv", sep=";", row.names=TRUE)
+# 4 divergent transitions before, none in Oct 2019
+
+m2.rs.stan <- stan_lmer(BBdelay~as.factor(treatment.adj) +
+    (as.factor(treatment.adj)|Species/Tree), data=d2, cores=4, iter=5000, warmup=4000)
+# 2 divergent transitions in Oct 2019 (could probably get it down)
+summary(m2.rs.stan)
+save(m2.rs.stan, file="output/m2.rs.stan.Rdata")
+m2.rs.stan.df <- as.data.frame(summary(m2.rs.stan)[,columnstoextract])
+# Deleting these so I can bind with posterior interval output
+m2.rs.stan.df <- m2.rs.stan.df[-(which(rownames(m2.rs.stan.df)=="mean_PPD")),]
+m2.rs.stan.df <- m2.rs.stan.df[-(which(rownames(m2.rs.stan.df)=="log-posterior")),] 
+m2.rs.stan.df <- cbind(m2.rs.stan.df, posterior_interval(m2.rs.stan, prob = 0.9, type = "central"))
+write.table(m2.rs.stan.df, file="output/m2.rs.stan.df.csv", sep=";", row.names=TRUE)
+
+# Just do fixed effects... 
+m2.fixed.stan <- stan_lm(BBdelay~as.factor(treatment.adj)*Species, data=d2, cores=4,
+    prior = R2(location = 0.5))
+save(m2.fixed.stan, file="output/m2.fixed.stan.Rdata")
+m2.fixed.stan.df <- as.data.frame(summary(m2.fixed.stan)[,columnstoextract])
+# Deleting these so I can bind with posterior interval output
+m2.fixed.stan.df <- m2.fixed.stan.df[-(which(rownames(m2.fixed.stan.df)=="mean_PPD")),]
+m2.fixed.stan.df <- m2.fixed.stan.df[-(which(rownames(m2.fixed.stan.df)=="log-posterior")),] 
+m2.fixed.stan.df <- cbind(m2.fixed.stan.df, posterior_interval(m2.fixed.stan, prob = 0.9, type = "central"))
+write.table(m2.fixed.stan.df, file="output/m2.fixed.stan.df.csv", sep=";", row.names=TRUE)
+
+}
 
 ### Set up plotting
 library(RColorBrewer)
@@ -149,25 +182,30 @@ alphahere.lighter = 0.2
 
 ####
 if(runstanmodels.e2){
-# load("output/m2.stan.alt.Rdata")
-# m2sum.alt <- summary(m2.stan.alt)
-
+## Important! The below code loops over species, but be careful using it as it is designed to work on random slope models
+    
 # ugly, but functional
-rownames(m2sum.alt)[1:6] <- paste(rownames(m2sum.alt)[1:6], "Acer")
+modelhere <- m2.rs.stan.df # give df of model # m2.fixed.stan.df
+rownames(modelhere)[1:6] <- paste(rownames(modelhere)[1:6], "Acer")    
+# fix intercept to zero ...
+modelint <- modelhere[1,1]
+modelhere[1,1:6] <- modelhere[1,1:6]-modelint
+modelhere[1,9:10] <- modelhere[1,9:10]-modelint
+
 # loop over species 
 par(xpd=FALSE)
 par(mar=c(5,7,3,10))
-plot(x=NULL,y=NULL, xlim=c(-10, 40), yaxt='n', ylim=c(0,6),
+plot(x=NULL,y=NULL, xlim=c(-15, 15), yaxt='n', ylim=c(0,6),
      xlab="Model estimate delay in BB", ylab="", main="Experiment 2")
 axis(2, at=1:6, labels=rev(c("20/20", "10/26", "14/22", "14/26", "14/26d", "26/14")), las=1)
 abline(v=0, lty=2, col="darkgrey")
 
 modelsplist <- c("Acer", "Betula", "Fagus", "Quercus")
 for(whichsp in c(1:4)){
-dfhere <- m2sum.alt[grep(modelsplist[whichsp], rownames(m2sum.alt)),][1:6,]
+dfhere <- modelhere[grep(modelsplist[whichsp], rownames(modelhere)),][1:6,]
 for(i in 1:6){
   pos.y <- (6:1)[i]
-  lines(c(dfhere[i,"25%"], dfhere[i,"75%"]), rep(pos.y,2), col=alpha(my.pal[whichsp], alphahere), type="l", lwd=2)
+  lines(c(dfhere[i,"5%"], dfhere[i,"95%"]), rep(pos.y,2), col=alpha(my.pal[whichsp], alphahere), type="l", lwd=2)
   lines(c(dfhere[i,"2.5%"], dfhere[i,"97.5%"]), rep(pos.y,2), col=alpha(my.pal[whichsp], alphahere.lighter),
      type="l", lwd=2)
   }
@@ -222,7 +260,6 @@ legend(21, 6, c("Acer", "Betula", "Fagus", "Quercus"), pch=19, col=alpha(my.pal[
 
 
 if(runstanmodels.e2.bysp){
-columnstoextract <- c("mean", "2.5%", "25%", "50%", "75%", "97.5%", "Rhat", "mcse")
 # random intercepts (just for Acer for now)
 m2.stan.ace.ri <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (1|Tree), data=ace)
@@ -242,24 +279,45 @@ m2.stan.ace.rs <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (as.factor(treatment.adj)|Tree), data=ace, cores=4)
 save(m2.stan.ace.rs, file="output/m2.stan.ace.rs.Rdata")
 m2.stan.ace.rs.df <- as.data.frame(summary(m2.stan.ace.rs)[,columnstoextract])
+# Deleting these so I can bind with posterior interval output
+m2.stan.ace.rs.df <- m2.stan.ace.rs.df[-(which(rownames(m2.stan.ace.rs.df)=="mean_PPD")),]
+m2.stan.ace.rs.df <- m2.stan.ace.rs.df[-(which(rownames(m2.stan.ace.rs.df)=="log-posterior")),] 
+m2.stan.ace.rs.df <- cbind(m2.stan.ace.rs.df, posterior_interval(m2.stan.ace.rs, prob = 0.9, type = "central"))
 write.table(m2.stan.ace.rs.df, file="output/m2.stan.ace.rs.df.csv", sep=";", row.names=TRUE)
-
+if(FALSE){ # random code I needed once.. 
+draws <- as.matrix(m2.stan.ace.rs)
+print(colnames(draws))
+quantile(draws, 0.80)
+# or... this is nice!
+posterior_interval(m2.stan.ace.rs, prob = 0.9, type = "central")
+}
 m2.stan.bet.rs <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (as.factor(treatment.adj)|Tree), data=bet, cores=4)
 save(m2.stan.bet.rs, file="output/m2.stan.bet.rs.Rdata")
 m2.stan.bet.rs.df <- as.data.frame(summary(m2.stan.bet.rs)[,columnstoextract])
+m2.stan.bet.rs.df <- m2.stan.bet.rs.df[-(which(rownames(m2.stan.bet.rs.df)=="mean_PPD")),]
+m2.stan.bet.rs.df <- m2.stan.bet.rs.df[-(which(rownames(m2.stan.bet.rs.df)=="log-posterior")),] 
+m2.stan.bet.rs.df <- cbind(m2.stan.bet.rs.df, posterior_interval(m2.stan.bet.rs, prob = 0.9, type = "central"))
 write.table(m2.stan.bet.rs.df, file="output/m2.stan.bet.rs.df.csv", sep=";", row.names=TRUE)
 
 m2.stan.fag.rs <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (as.factor(treatment.adj)|Tree), data=fag, cores=4)
 save(m2.stan.fag.rs, file="output/m2.stan.fag.rs.Rdata")
 m2.stan.fag.rs.df <- as.data.frame(summary(m2.stan.fag.rs)[,columnstoextract])
+# Deleting these so I can bind with posterior interval output
+m2.stan.fag.rs.df <- m2.stan.fag.rs.df[-(which(rownames(m2.stan.fag.rs.df)=="mean_PPD")),]
+m2.stan.fag.rs.df <- m2.stan.fag.rs.df[-(which(rownames(m2.stan.fag.rs.df)=="log-posterior")),] 
+m2.stan.fag.rs.df <- cbind(m2.stan.fag.rs.df, posterior_interval(m2.stan.fag.rs, prob = 0.9, type = "central"))
 write.table(m2.stan.fag.rs.df, file="output/m2.stan.fag.rs.df.csv", sep=";", row.names=TRUE)
 
 m2.stan.que.rs <- stan_lmer(BBdelay~as.factor(treatment.adj) +
     (as.factor(treatment.adj)|Tree), data=que, cores=4)
 save(m2.stan.que.rs, file="output/m2.stan.que.rs.Rdata")
 m2.stan.que.rs.df <- as.data.frame(summary(m2.stan.que.rs)[,columnstoextract])
+# Deleting these so I can bind with posterior interval output
+m2.stan.que.rs.df <- m2.stan.que.rs.df[-(which(rownames(m2.stan.que.rs.df)=="mean_PPD")),]
+m2.stan.que.rs.df <- m2.stan.que.rs.df[-(which(rownames(m2.stan.que.rs.df)=="log-posterior")),] 
+m2.stan.que.rs.df <- cbind(m2.stan.que.rs.df, posterior_interval(m2.stan.que.rs, prob = 0.9, type = "central"))
 write.table(m2.stan.que.rs.df, file="output/m2.stan.que.rs.df.csv", sep=";", row.names=TRUE)
     
 }
