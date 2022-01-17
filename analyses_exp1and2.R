@@ -28,7 +28,8 @@ columnstoextract <- c("mean", "2.5%", "25%", "50%", "75%", "97.5%", "Rhat", "mcs
 runstanmodels.e1 <- FALSE
 runstanmodels.e2 <- FALSE
 runstanmodels.e2.bysp <- FALSE
-plotstanmodels.e2.bysp <- TRUE # need to have run the stan models and have the output 
+plotstanmodels.e2.bysp <- TRUE # need to have run the stan models and have the output
+plot.m2stan.alt.e2 <- FALSE # just does one plot Isabelle asked for
 
 setwd("~/Documents/git/projects/treegarden/isabelle_expe")
 
@@ -210,6 +211,56 @@ for(i in 1:6){
      type="l", lwd=2)
   }
 pos.y <- (6:1)
+pos.x <- dfhere[,"mean"]
+points(pos.x, pos.y, cex=1, pch=19, col=alpha(my.pal[whichsp],alphahere))
+}
+
+par(xpd=TRUE) # so I can plot legend outside
+legend(21, 6, c("Acer", "Betula", "Fagus", "Quercus"), pch=19, col=alpha(my.pal[1:4], alphahere),
+   cex=0.75, bty="n")
+
+}
+if(plot.m2stan.alt.e2){ # Another plot, this one for the species-on-intercept model
+m2.stan.alt.df <- read.delim("output/m2.stan.alt.df.csv", header=TRUE, sep=";")
+nameshere <- c("mean", "2.5%", "25%", "50%", "75%", "97.5%", "Rhat", "mcse", "5%", "95%")
+names(m2.stan.alt.df) <- nameshere
+modelhere <- m2.stan.alt.df
+rownames(modelhere)[1:6] <- paste(rownames(modelhere)[1:6], "Acer")
+# fix intercept to zero ...
+modelint <- modelhere[1,1]
+modelhere[1,1:6] <- modelhere[1,1:6]-modelint
+    
+par(xpd=FALSE)
+par(mar=c(5,7,3,10))
+plot(x=NULL,y=NULL, xlim=c(-15, 15), yaxt='n', ylim=c(0,6),
+     xlab="Model estimate delay in BB", ylab="", main="Experiment 2")
+axis(2, at=1:6, labels=rev(c("20/20", "10/26", "14/22", "14/26", "14/26d", "26/14")), las=1)
+abline(v=0, lty=2, col="darkgrey")
+
+# plot treatment effects first
+dfheretreat <- modelhere[1:6,]
+
+for(i in 1:6){
+  pos.y <- (6:1)[i]
+  lines(c(dfheretreat[i,"5%"], dfheretreat[i,"95%"]), rep(pos.y,2), col=alpha("black", alphahere), type="l", lwd=2)
+  lines(c(dfheretreat[i,"2.5%"], dfheretreat[i,"97.5%"]), rep(pos.y,2), col=alpha("black", alphahere.lighter),
+     type="l", lwd=2)
+  }
+pos.y <- (6:1)
+pos.x <- dfheretreat[,"mean"]
+points(pos.x, pos.y, cex=1, pch=19, col=alpha("black", alphahere))
+
+modelsplist <- c("Acer", "Betula", "Fagus", "Quercus")
+for(whichsp in c(1:4)){
+dfhereall <- modelhere[grep(modelsplist[whichsp], rownames(modelhere)),]
+dfhere <- dfhereall[nrow(dfhereall),]
+# dfhere[1,9:10] <- dfhere[1,9:10]-modelint
+i <- 1
+  pos.y <- 5.8
+  lines(c(dfhere[i,"5%"], dfhere[i,"95%"]), rep(pos.y,2), col=alpha(my.pal[whichsp], alphahere), type="l", lwd=2)
+  lines(c(dfhere[i,"2.5%"], dfhere[i,"97.5%"]), rep(pos.y,2), col=alpha(my.pal[whichsp], alphahere.lighter),
+     type="l", lwd=2)
+pos.y <- 5.8
 pos.x <- dfhere[,"mean"]
 points(pos.x, pos.y, cex=1, pch=19, col=alpha(my.pal[whichsp],alphahere))
 }

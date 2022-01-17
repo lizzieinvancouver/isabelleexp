@@ -16,7 +16,7 @@ library(rstanarm)
 # library(plyr)
 # library(dplyr)
 
-setwd("~/Documents/git/projects/treegarden/isabelle_expe")
+setwd("~/Documents/git/projects/treegarden/misc/isabelle_expe")
 
 ## Get the data ##
 ## This version has night, DIFF etc. temperatures

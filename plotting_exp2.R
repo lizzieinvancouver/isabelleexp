@@ -10,7 +10,7 @@ options(stringsAsFactors = FALSE)
 
 library(rstan) # oddly, this seems to have alpha command!
 
-setwd("~/Documents/git/projects/treegarden/isabelle_expe")
+setwd("~/Documents/git/projects/treegarden/misc/isabelle_expe")
 
 # Get the models (probably need to change to tab delim!)
 # read.delim("data_expe1.csv", header=TRUE, sep=";")
