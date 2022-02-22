@@ -4,11 +4,10 @@
 ## Plotting for Stan models for Isabelle's experiments ##
 ## Combining EACH species level model into one plot ##
 
-
-
 ## To do ... ##
-# Check the plot is doing what we want #
-# Ask Isabelle how she wants the intercept plotted ... (or just do all relative to 0)
+# Checking the plot is doing what we want ...
+# Did a quick spot check of df versus what was plotted, seems good! #
+# Also told Isabelle to check. #
 
 ################
 ## housekeeping
@@ -93,6 +92,22 @@ for (postnum in seq_along(posteriorz)){
 
 ## Super, now we need to plot this ...
 
+# First, set up a df with the intercepts set to 0
+dfzero <- df
+for (spname in seq_along(latbi)){
+    for(i in c(3:8)){
+        dfzero[which(dfzero$treat=="(Intercept)" & dfzero$species==latbi[spname]),i] <-
+            df[which(df$treat=="(Intercept)" & df$species==latbi[spname]),i]-df[which(df$treat=="(Intercept)" & df$species=="overall"),3]
+        # Note that you can set df$species=="overall" --> df$species==latbi[spname] and ...
+        # then you get each point centered on its own model (but everything piles up then on zero)
+}
+}
+
+dfzero[which(dfzero$treat=="(Intercept)"),]
+
+# Want muploteachspeciesalone_wavgpost_notzero.pdf? (First version that I made for Isabelle)
+# Replace dfzero below with df
+
 # Set up plotting
 library(RColorBrewer)
 my.pal <- rep(brewer.pal(n = 4, name = "Set1"), 4)
@@ -100,18 +115,19 @@ my.pal2 <- c(brewer.pal(n = 9, name = "Set1"), "darkred")
 
 # display.brewer.all()
 my.pch <- c(15:18)
+cexpch <- 1
 alphahere = 0.6 # transparency
 alphahere.lighter = 0.2
 
 jitterpt <- -0.2 # push tree ID estimates below main estimate
 
 
-cil <- "twopt5per"
-ciu <- "ninety7pt5per"
-cil2 <- "twenty5per"
-ciu2 <- "seventy5per"
-xlim <- c(-20, 50)
-legendxpos <- 23
+cil2 <- "twopt5per"
+ciu2 <- "ninety7pt5per"
+cil <- "twenty5per"
+ciu <- "seventy5per"
+xlim <- c(-20, 17)
+legendxpos <- 9
 width <- 7
 height <- 6
 
@@ -122,13 +138,17 @@ par(mar=c(5,7,3,7))
 plot(x=NULL,y=NULL, xlim=xlim, yaxt='n', ylim=c(0,6),
      xlab="Model estimate delay in budburst (days)", ylab="",
          main="Experiment 2: Model of each species alone, with average shown")
-axis(2, at=1:6, labels=rev(c("20/20 (intcpt)", "14/26", "14/26d", "26/14", "14/22", "10/26")), las=1)
+axis(2, at=1:6, labels=rev(c("20/20", "14/26", "14/26d", "26/14", "14/22", "10/26")), las=1)
 abline(v=0, lty=2, col="darkgrey")
 for(whichsp in c(1:(length(latbi)-1))){
-dfhere <- subset(df, species==latbi[whichsp])
-# Okay, we go through the 6 levels of treatment
+dfhere <- subset(dfzero, species==latbi[whichsp])
+# Okay, we go through the 6 levels of treatment  
 for(i in 1:6){ 
   pos.y <- (6:1)[i]
+  lines(c(dfhere[i,cil2], 
+          dfhere[i,ciu2]), 
+          rep(pos.y+jitterpt,2),
+          col=alpha(my.pal2[whichsp], alphahere.lighter), type="l", lwd=2)
   lines(c(dfhere[i,cil], 
           dfhere[i,ciu]), 
           rep(pos.y+jitterpt,2),
@@ -139,17 +159,16 @@ pos.x <- dfhere[,"mean"]+jitterpt
 points(pos.x, pos.y, cex=1, pch=19, col=alpha(my.pal2[whichsp], alphahere))
 }
 
-dfoverall <- subset(df, species=="overall")
-
-# These don't show up given the order of how I set up ciu2 versus cui etc.
-# However, the intervals are so tight, you cannot see the 50% intervals ... 
+dfoverall <- subset(dfzero, species=="overall")
+ 
 for(i in 1:6){
    pos.y <- (6:1)
    lines(c(dfoverall[i,cil2], dfoverall[i,ciu2]), rep(pos.y[i], 2),
        col=alpha("black", alphahere.lighter), type="l", lwd=2)
 }
     
-points(dfoverall[1:6,"mean"], (6:1), cex=1, pch=19, col="black")
+points(dfoverall[1:6,"mean"], (6:1), cex=cexpch, pch=19, col="black")
+
 for(i in 1:6){
    pos.y <- (6:1)
    lines(c(dfoverall[i,cil], dfoverall[i,ciu]), rep(pos.y[i], 2), col="black",
@@ -157,9 +176,9 @@ for(i in 1:6){
 }
 
 par(xpd=TRUE) # so I can plot legend outside
-legend(legendxpos, 1, latbi[1:4],
+legend(legendxpos, 1.5, c("Acer", "Betula", "Fagus", "Quercus"),
    pch=19, col=alpha(my.pal2[1:4], alphahere),
-   cex=0.75, bty="n")
+   cex=cexpch, bty="n")
 dev.off()
 
 write.table(df, file="output/m2.stan_eachspeciesalone_wavgpost.csv", sep=";", row.names=TRUE)
