@@ -182,3 +182,25 @@ legend(legendxpos, 1.5, c("Acer", "Betula", "Fagus", "Quercus"),
 dev.off()
 
 write.table(df, file="output/m2.stan_eachspeciesalone_wavgpost.csv", sep=";", row.names=TRUE)
+
+## Update in September 2024
+## Isabelle would also like the values for each tree 
+
+# Okay, so here's the parameters 
+colMeans(posteriorz[[1]])
+# I discussed with Isabelle and she will just take the full set of means (all parameters)
+# A bit of a hack, I build the dataframe off the first species and loop through remaining 3
+allmodoutputmeanz <- as.data.frame(colMeans(posteriorz[[1]]))
+names(allmodoutputmeanz) <- c("mean")
+allmodoutputmeanz$species <- latbi[1]
+restofthespp <- c()
+for(i in c(1:3)){
+    nextspp <- as.data.frame(colMeans(posteriorz[[i+1]]))
+    names(nextspp) <- c("mean")
+    nextspp$species<- latbi[i+1]
+    allmodoutputmeanz <- rbind(allmodoutputmeanz, nextspp)
+}
+
+write.table(allmodoutputmeanz, file="output/m2.stan_eachspeciesalone_meanoutputallparams.csv", sep=";", 
+    row.names=TRUE)
+
