@@ -105,12 +105,12 @@ ciu2 <- "95%" # credible interval upper
 xlim <- c(-20, 20) # the x axis limits
 legendxpos <- 23 # where to put the legend (must be al little bigger than max of xlim) 
 } 
-plot.randslopes.zeroint <- function(model, spname, nameforfig, height, width, cil, ciu, cil2, ciu2, xlim, legendxpos){
+plot.randslopes.zeroint <- function(model, folderpath, spname, nameforfig, height, width, cil, ciu, cil2, ciu2, xlim, legendxpos){
     modelhere <- model
     modelint <- modelhere[1,1]
     modelhere[1,1:6] <- modelhere[1,1:6]-modelint
     modelhere[1,9:10] <- modelhere[1,9:10]-modelint
-pdf(file.path(paste("figures/muplot", spname, nameforfig, ".pdf", sep="")),
+pdf(file.path(paste("figures/", folderpath, "muplot", spname, nameforfig, ".pdf", sep="")),
     width = width, height = height)
 par(xpd=FALSE)
 par(mar=c(5,7,3,7))
@@ -169,20 +169,21 @@ plot.randslopes(m2.stan.que.rs.df, "Quercus", "exp2randslopes.50per", 7, 6, "25%
     "25%", "75%", c(-10, 46), 48)
 
 # intercept centered at zero
-plot.randslopes.zeroint(m2.stan.ace.rs.df, "Acer", "exp2randslopes.noint.50per", 7, 6, 
+# As of 25 September 2024 I moved the exp2randslopes.noint.95per to manuscriptfigures/ but updating the f(x) above
+plot.randslopes.zeroint(m2.stan.ace.rs.df, folderpath="", "Acer", "exp2randslopes.noint.50per", 7, 6, 
     "5%", "95%", "25%", "75%", c(-20, 20), 23)
-plot.randslopes.zeroint(m2.stan.ace.rs.df, "Acer", "exp2randslopes.noint.95per", 7, 6,
+plot.randslopes.zeroint(m2.stan.ace.rs.df, "manuscriptfigures/", "Acer", "exp2randslopes.noint.95per", 7, 6,
     "2.5%", "97.5%", "5%", "95%", c(-20, 20), 23)
-plot.randslopes.zeroint(m2.stan.bet.rs.df, "Betula", "exp2randslopes.noint.50per", 7, 6,
+plot.randslopes.zeroint(m2.stan.bet.rs.df, folderpath="", "Betula", "exp2randslopes.noint.50per", 7, 6,
      "5%", "95%", "25%", "75%", c(-20, 20), 23)
-plot.randslopes.zeroint(m2.stan.bet.rs.df, "Betula", "exp2randslopes.noint.95per", 7, 6,
+plot.randslopes.zeroint(m2.stan.bet.rs.df, "manuscriptfigures/", "Betula", "exp2randslopes.noint.95per", 7, 6,
     "2.5%", "97.5%", "5%", "95%", c(-20, 20), 23)
-plot.randslopes.zeroint(m2.stan.fag.rs.df, "Fagus", "exp2randslopes.noint.50per", 7, 6,
+plot.randslopes.zeroint(m2.stan.fag.rs.df, folderpath="", "Fagus", "exp2randslopes.noint.50per", 7, 6,
     "5%", "95%", "25%", "75%", c(-30, 20), 23)
-plot.randslopes.zeroint(m2.stan.fag.rs.df, "Fagus", "exp2randslopes.noint.95per", 7, 6,
+plot.randslopes.zeroint(m2.stan.fag.rs.df, "manuscriptfigures/", "Fagus", "exp2randslopes.noint.95per", 7, 6,
     "2.5%", "97.5%", "5%", "95%", c(-30, 20), 23)
-plot.randslopes.zeroint(m2.stan.que.rs.df, "Quercus", "exp2randslopes.noint.50per", 7, 6,
+plot.randslopes.zeroint(m2.stan.que.rs.df, folderpath="",  "Quercus", "exp2randslopes.noint.50per", 7, 6,
     "5%", "95%", "25%", "75%", c(-20, 20), 23)
-plot.randslopes.zeroint(m2.stan.que.rs.df, "Quercus", "exp2randslopes.noint.95per", 7, 6,
+plot.randslopes.zeroint(m2.stan.que.rs.df,"manuscriptfigures/",  "Quercus", "exp2randslopes.noint.95per", 7, 6,
      "2.5%", "97.5%", "5%", "95%", c(-20, 20), 23)
 
