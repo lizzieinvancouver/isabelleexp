@@ -131,7 +131,7 @@ legendxpos <- 9
 width <- 7
 height <- 6
 
-pdf(file.path("figures/muploteachspeciesalone_wavgpost.pdf"),
+pdf(file.path("figures/manuscriptfigures/muploteachspeciesalone_wavgpost.pdf"),
     width = width, height = height)
 par(xpd=FALSE)
 par(mar=c(5,7,3,7))
