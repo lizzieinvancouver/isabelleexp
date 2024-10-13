@@ -56,7 +56,7 @@ summary(acer.min, pars="MinT") # impt
 summary(acer.dawn, pars="DawnT") # ns
 summary(acer.dusk, pars="DuskT") # nothing!
 summary(acer.diff, pars="DIFF") # impt
-summary(acer.mean, pars="MeanT") # ns (but loo suggests it's predictively similar to max and min)
+summary(acer.mean, pars="MeanT") # ns (but loo suggests it's predictively similar to max and min but has really big SE)
 
 acer.maxdiff <- stan_lmer(BBdelay ~ MaxT + DIFF + (1|Tree_ID/Cutting_code), data=acer, cores=4)
 acer.mindiff <- stan_lmer(BBdelay ~ MinT + DIFF + (1|Tree_ID/Cutting_code), data=acer, cores=4)
