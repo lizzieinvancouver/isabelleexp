@@ -1,0 +1,69 @@
+## Started 10 October 2024 ##
+## By Lizzie ##
+
+## Following analyses_compmod_exp2.R some ##
+## Using Stan and loo to do similar model comparison as Isabelle did in Scripts__expe2_model_comparison.R ##
+
+## See https://mc-stan.org/loo/articles/loo2-example.html for info on loo ##
+## I have not fully reviewed the above page, I am mostly just following what I did in analyses_compmod_exp2.R ##
+
+rm(list=ls()) # remove everything currently held in the R memory
+options(stringsAsFactors=FALSE)
+
+# Load libraries
+library(rstanarm)
+
+setwd("~/Documents/git/projects/treegarden/misc/isabelle_expe/modelcompare")
+
+d <- read.delim("input/data_expe2_v5.csv", header=TRUE, sep=";")
+acer <- subset(d, Species=="Acer")
+
+# Run all the single predictor models 
+acer.null <- stan_lmer(BBdelay ~ (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.day <- stan_lmer(BBdelay ~ DayT + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.night <- stan_lmer(BBdelay ~ NightT + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.max <- stan_lmer(BBdelay ~ MaxT + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.min <- stan_lmer(BBdelay ~ MinT + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.dawn <- stan_lmer(BBdelay ~ DawnT + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.dusk <- stan_lmer(BBdelay ~ DuskT + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.diff <- stan_lmer(BBdelay ~ DIFF + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.mean <- stan_lmer(BBdelay ~  MeanT + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+
+loo.acer.null <- loo(acer.null, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.day <- loo(acer.day, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.night <- loo(acer.night, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.max <- loo(acer.max, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.min <- loo(acer.min, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.dawn <- loo(acer.dawn, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.dusk <- loo(acer.dusk, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.diff <- loo(acer.diff, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.mean <- loo(acer.mean, save_psis = TRUE, k_threshold = 0.7)
+
+loo_compare(loo.acer.null, loo.acer.day, loo.acer.night, loo.acer.max,
+	loo.acer.min, loo.acer.dawn, loo.acer.dusk, loo.acer.diff, loo.acer.mean) 
+
+# The above works, we don't need the pairwise comparisons ...
+# but leaving these in to show that:
+loo_compare(loo.acer.null, loo.acer.max) 
+loo_compare(loo.acer.null, loo.acer.diff) 
+
+# Now check what seems to matter and run additional models
+# I am looking at estimate versus SD and also the 10-90% intervals
+summary(acer.day, pars="DayT") # marginal
+summary(acer.night, pars="NightT") # marginal
+summary(acer.max, pars="MaxT") # impt
+summary(acer.min, pars="MinT") # impt
+summary(acer.dawn, pars="DawnT") # ns
+summary(acer.dusk, pars="DuskT") # nothing!
+summary(acer.diff, pars="DIFF") # impt
+summary(acer.mean, pars="MeanT") # ns (but loo suggests it's predictively similar to max and min)
+
+acer.maxdiff <- stan_lmer(BBdelay ~ MaxT + DIFF + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.mindiff <- stan_lmer(BBdelay ~ MinT + DIFF + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+acer.maxmin <- stan_lmer(BBdelay ~  MaxT + MinT + (1|Tree_ID/Cutting_code), data=acer, cores=4)
+
+loo.acer.maxdiff <- loo(acer.maxdiff, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.mindiff <- loo(acer.mindiff, save_psis = TRUE, k_threshold = 0.7)
+loo.acer.maxmin <- loo(acer.maxmin, save_psis = TRUE, k_threshold = 0.7)
+
+loo_compare(loo.acer.maxdiff, loo.acer.mindiff, loo.acer.maxmin) # these models are all identical
