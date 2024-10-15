@@ -1,0 +1,91 @@
+## Started 14 October 2024
+## By Lizzie
+
+## What this code does ...
+Following analyses_compmod_exp2.R some 
+Using Stan and loo to do similar model comparison as Isabelle did in Scripts__expe2_model_comparison.R 
+See https://mc-stan.org/loo/articles/loo2-example.html for info on loo ##
+I have not fully reviewed the above page, I am mostly just following what I did in analyses_compmod_exp2.R ##
+
+```{r}
+rm(list=ls()) # remove everything currently held in the R memory
+options(stringsAsFactors=FALSE)
+```
+
+Load libraries
+```{r}
+library(rstanarm)
+```
+
+Get the data
+```{r}
+setwd("~/Documents/git/projects/treegarden/misc/isabelle_expe/modelcompare")
+d <- read.delim("input/data_expe2_v5.csv", header=TRUE, sep=";")
+fagus <- subset(d, Species=="Fagus")
+```
+
+Run all the single predictor models 
+```{r}
+fagus.null <- stan_lmer(BBdelay ~ (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.day <- stan_lmer(BBdelay ~ DayT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.night <- stan_lmer(BBdelay ~ NightT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.max <- stan_lmer(BBdelay ~ MaxT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.min <- stan_lmer(BBdelay ~ MinT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.dawn <- stan_lmer(BBdelay ~ DawnT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.dusk <- stan_lmer(BBdelay ~ DuskT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.diff <- stan_lmer(BBdelay ~ DIFF + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.mean <- stan_lmer(BBdelay ~  MeanT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+
+loo.fagus.null <- loo(fagus.null, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.day <- loo(fagus.day, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.night <- loo(fagus.night, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.max <- loo(fagus.max, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.min <- loo(fagus.min, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.dawn <- loo(fagus.dawn, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.dusk <- loo(fagus.dusk, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.diff <- loo(fagus.diff, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.mean <- loo(fagus.mean, save_psis = TRUE, k_threshold = 0.7)
+```
+
+```{r}
+loo_compare(loo.fagus.null, loo.fagus.day, loo.fagus.night, loo.fagus.max,
+	loo.fagus.min, loo.fagus.dawn, loo.fagus.dusk, loo.fagus.diff, loo.fagus.mean) 
+```
+
+Now showing the model output ... 
+Can look at estimate versus SD and also the 10-90% intervals
+
+```{r}
+summary(fagus.day, pars="DayT") 
+summary(fagus.night, pars="NightT") 
+summary(fagus.max, pars="MaxT") 
+summary(fagus.min, pars="MinT") 
+summary(fagus.dawn, pars="DawnT") 
+summary(fagus.dusk, pars="DuskT") 
+summary(fagus.diff, pars="DIFF") 
+summary(fagus.mean, pars="MeanT") 
+```
+
+And look at the models with multiple predictors, for Fagus, I am just comparing to what Isabelle used
+```{r}
+fagus.diffdawn <- stan_lmer(BBdelay ~  DawnT + DIFF + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.diffdusk <- stan_lmer(BBdelay ~  DIFF + DuskT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.dawndusk <- stan_lmer(BBdelay ~  DawnT + DuskT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.maxdiff <- stan_lmer(BBdelay ~ MaxT + DIFF + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.mindiff <- stan_lmer(BBdelay ~ MinT + DIFF + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.minmean <- stan_lmer(BBdelay ~  MinT + MeanT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.maxmean <- stan_lmer(BBdelay ~  MaxT + MeanT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+fagus.maxday <- stan_lmer(BBdelay ~  MaxT + DayT + (1|Tree_ID/Cutting_code), data=fagus, cores=4)
+
+loo.fagus.diffdawn <- loo(fagus.diffdawn, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.diffdusk   <- loo(fagus.diffdusk, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.dawndusk  <- loo(fagus.dawndusk, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.maxdiff  <- loo(fagus.maxdiff, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.mindiff <- loo(fagus.mindiff, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.minmean  <- loo(fagus.minmean, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.maxmean <- loo(fagus.maxmean, save_psis = TRUE, k_threshold = 0.7)
+loo.fagus.maxday  <- loo(fagus.maxday, save_psis = TRUE, k_threshold = 0.7)
+
+loo_compare(loo.fagus.diffdawn, loo.fagus.diffdusk, loo.fagus.dawndusk, loo.fagus.maxdiff,
+	loo.fagus.mindiff, loo.fagus.minmean, loo.fagus.maxmean, loo.fagus.maxday) 
+```
